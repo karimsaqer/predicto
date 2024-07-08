@@ -1,0 +1,7 @@
+README.md
+setup.py
+predicto.egg-info/PKG-INFO
+predicto.egg-info/SOURCES.txt
+predicto.egg-info/dependency_links.txt
+predicto.egg-info/requires.txt
+predicto.egg-info/top_level.txt
