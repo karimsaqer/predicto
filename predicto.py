@@ -1,13 +1,5 @@
-# from ..API import BaseClass
-# from ..models import ConvLSTMModule, MIMLightningModel, PredRNNpp_Model
-# from ..Utils import *
-# from ..Modules import ConvLSTMCell, ConvLSTM, Convig, MIM_Model, MIMBlock, MIMN, STLSTMCell, CausalLSTMCell, GHU
 import torch
-# Initialize the Predicto library
-from .API import BaseClass
-from .models import CausalLSTM, MIM, PredRNNPlusPlus
-from .Utils import utils
-from .Modules import convlstm, mim, predrnnpp
+from .model.predrnnpp import PredRNNpp_Model
 
 class Predicto:
     '''
