@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: vpredicto
-Version: 0.1.7
+Version: 0.1.13
 Summary: A library for video frame prediction using PredRNN++, MIM, and Causal LSTM.
 Home-page: https://github.com/karimsaqer/predicto
 Author: Team 18

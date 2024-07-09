@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from modules.mim.stlstm import STLSTMCell
-from modules.mim.mimn import MIMN
-from modules.mim.mimblock import MIMBlock
+from .stlstm import STLSTMCell
+from .mimn import MIMN
+from .mimblock import MIMBlock
 
 
 class MIM_Model(nn.Module):
