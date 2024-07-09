@@ -5,8 +5,8 @@ from torch.utils.tensorboard import SummaryWriter
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
-from ..utils import show_video_line, patch_images, patch_images_back, schedule_sampling
-from ..modules.MIM import MIM_Model
+from ..Utils.utils import show_video_line, patch_images, patch_images_back, schedule_sampling
+from ..modules.mim.mim import MIM_Model
 
 
 
