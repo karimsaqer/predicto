@@ -8,9 +8,10 @@ from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 import os
 import pytorch_lightning as pl
-from ..Utils.utils import show_video_line, patch_images, patch_images_back, schedule_sampling
+from ..utils import show_video_line, patch_images, patch_images_back, schedule_sampling
 from ..modules.convlstm.conv import ConvLSTM
 # from ..modules.convlstm.cell import ConvLSTMCell
+# from ..utils.utils import load_data
 
 
 class ConvLSTMModule(LightningModule):

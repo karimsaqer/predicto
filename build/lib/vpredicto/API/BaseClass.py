@@ -1,14 +1,7 @@
-# from ..API import BaseClass
-# from ..models import ConvLSTMModule, MIMLightningModel, PredRNNpp_Model
-# from ..Utils import *
-# from ..Modules import ConvLSTMCell, ConvLSTM, Convig, MIM_Model, MIMBlock, MIMN, STLSTMCell, CausalLSTMCell, GHU
 import torch
-# Initialize the Predicto library
-from .API import BaseClass
-from .models import CausalLSTM, MIM, PredRNNPlusPlus
-from .Utils import utils
-from .Modules import convlstm, mim, predrnnpp
+from ..models.predrnnpp import PredRNNpp_Model
 
+# Base class for all models
 class Predicto:
     '''
     init method to initialize the model and device: you can pass the model that you chose and device as parameters

@@ -19,7 +19,7 @@ pip install vpredicto
 
 ## Quick Start
 ```sh
-from vpredicto import PredRNN, MIM, CausalLSTM, Predicto
+from predicto import PredRNN, MIM, CausalLSTM, Predicto
 
 # Create a model object
 model_object = MIM()
