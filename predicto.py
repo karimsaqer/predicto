@@ -66,3 +66,14 @@ class Predicto:
     def load(self, path='model.pth'):
         self.model.load_state_dict(torch.load(path))
         print(f"Model loaded from {path}")
+
+
+    '''
+    load_pkl method to load the model from a .pkl file: you can pass the path as a parameter
+    the input is the path to the .pkl file
+    the output is the loaded model
+    '''
+    def load_pkl(self, pkl_file_path='model.pth'):
+        state_dict = torch.load(pkl_file_path)
+        self.model.load_state_dict(state_dict)
+        print(f"Model loaded from {pkl_file_path}")
