@@ -1,6 +1,9 @@
 import torch
-from .model.predrnnpp import PredRNNpp_Model
-
+from .vpredicto.models.ConvLSTM import ConvLSTMModule
+from .vpredicto.models.MIM import MIMLightningModel
+from .vpredicto.models.PredRNNPlusPlus import PredRNNpp_Model
+from .vpredicto.models.SimVP import SimVP
+from .vpredicto.models.GAN import GANModel
 class Predicto:
     '''
     init method to initialize the model and device: you can pass the model that you chose and device as parameters
@@ -64,8 +67,12 @@ class Predicto:
     the output is the saved model
     '''
     def load(self, path='model.pth'):
-        self.model.load_state_dict(torch.load(path))
-        print(f"Model loaded from {path}")
+        if isinstance(self.model, GANModel):
+            self.model.generator.load_state_dict(torch.load(path, map_location=self.device))
+            print(f"Generator model loaded from {path}")
+        else:
+            self.model.load_state_dict(torch.load(path, map_location=self.device))
+            print(f"Model loaded from {path}")
 
 
     '''

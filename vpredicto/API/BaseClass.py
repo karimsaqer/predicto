@@ -38,8 +38,8 @@ class Predicto:
     the input is the test_loader
     the output is the output of test data from the model
     '''
-    def Predict(self, test_loader):
-        self.model.test_model(test_loader, self.device)
+    def Predict(self, test_loader, save=True):
+        self.model.test_model(test_loader, self.device, save=save)
 
 
     '''
@@ -72,8 +72,12 @@ class Predicto:
     the output is the saved model
     '''
     def load(self, path='model.pth'):
-        self.model.load_state_dict(torch.load(path))
-        print(f"Model loaded from {path}")
+        if isinstance(self.model, GANModel):
+            self.model.generator.load_state_dict(torch.load(path, map_location=self.device))
+            print(f"Generator model loaded from {path}")
+        else:
+            self.model.load_state_dict(torch.load(path, map_location=self.device))
+            print(f"Model loaded from {path}")
 
 
     '''
