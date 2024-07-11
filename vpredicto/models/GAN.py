@@ -7,7 +7,7 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 import matplotlib.pyplot as plt
-
+import os
 
 """
 Generative Adversarial Network (GAN) Model for Video Prediction.
@@ -193,32 +193,51 @@ class GANModel:
     inputs:
     - test_loader: DataLoader for the
     """
-    def test_model(self, test_loader):
+    def test_model(self, test_loader, device='cuda', save=True):
         self.generator.eval()
-        sample_batch = next(iter(test_loader))
-        input_frames = sample_batch[:, :10, :, :].float().squeeze(2)
-        target_frames = sample_batch[:, 10:20, :, :].float().squeeze(2)
-        with torch.no_grad():
-            output_frames = self.generator(input_frames)
+        self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
 
-        fig, axs = plt.subplots(3, 10, figsize=(20, 6))
-        for i in range(10):
-            axs[0, i].imshow(input_frames[0, i].cpu().numpy(), cmap='gray')
-            axs[0, i].axis('off')
-            axs[0, i].set_title(f'Input Frame {i}')
-        for i in range(10):
-            axs[1, i].imshow(target_frames[0, i].cpu().numpy(), cmap='gray')
-            axs[1, i].axis('off')
-            axs[1, i].set_title(f'Target Frame {i}')
-        for i in range(10):
-            axs[2, i].imshow(output_frames[0, i].cpu().numpy(), cmap='gray')
-            axs[2, i].axis('off')
-            axs[2, i].set_title(f'Generated Frame {i}')
-        plt.tight_layout()
-        plt.show()
+        save_dir = 'pred_results'
+        save = True
+        if save and not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
-        plt.close()
-        return output_frames
+        all_output_frames = []
+
+        for batch_idx, sample_batch in enumerate(test_loader):
+            input_frames = sample_batch[:, :10, :, :].float().squeeze(2).to(self.device)
+            target_frames = sample_batch[:, 10:20, :, :].float().squeeze(2).to(self.device)
+
+            with torch.no_grad():
+                output_frames = self.generator(input_frames)
+                all_output_frames.append(output_frames.cpu())
+
+            if save:
+                # Save each frame in the batch as an image
+                for frame_idx in range(output_frames.size(0)):
+                    fig, axs = plt.subplots(3, 10, figsize=(20, 6))
+                    for i in range(10):
+                        axs[0, i].imshow(input_frames[frame_idx, i].cpu().numpy(), cmap='gray')
+                        axs[0, i].axis('off')
+                        axs[0, i].set_title(f'Input Frame {i}')
+                    for i in range(10):
+                        axs[1, i].imshow(target_frames[frame_idx, i].cpu().numpy(), cmap='gray')
+                        axs[1, i].axis('off')
+                        axs[1, i].set_title(f'Target Frame {i}')
+                    for i in range(10):
+                        axs[2, i].imshow(output_frames[frame_idx, i].cpu().numpy(), cmap='gray')
+                        axs[2, i].axis('off')
+                        axs[2, i].set_title(f'Generated Frame {i}')
+                    plt.tight_layout()
+
+                    save_path = os.path.join(save_dir, f'batch_{batch_idx}_frame_{frame_idx}.png')
+                    plt.savefig(save_path)
+                    plt.close(fig)
+
+        # Concatenate all batches into one tensor
+        all_output_frames = torch.cat(all_output_frames, dim=0)
+
+        return all_output_frames
 
 
     """

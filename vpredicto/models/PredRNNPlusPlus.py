@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ..modules.predrnnpp.ghu import GHU
 from ..modules.predrnnpp.causal_lstm import CausalLSTMCell
-
+import os
 '''
 PredRNN++ Model
 __init__ method to initialize the PredRNN++ Model: you can pass the input_channels, hidden_channels, kernel_size, num_layers, and output_channels as parameters
@@ -115,44 +115,54 @@ class PredRNNpp_Model(nn.Module):
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 
-    def test_model(self, test_loader, device='cpu'):
+    def test_model(self, test_loader, device='cpu', save=True):
         self.eval()
         total_loss = 0.0
         criterion = nn.MSELoss()
         self.to(device)
 
+        save_dir = 'output_frames'
+        if save and not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        all_output_frames = []
+
         with torch.no_grad():
-            for inputs, labels in test_loader:
+            for batch_idx, (inputs, labels) in enumerate(test_loader):
                 inputs, labels = inputs.to(device), labels.to(device)
-                outputs = self(inputs)  
+                outputs = self(inputs)
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
+                all_output_frames.append(outputs.cpu())
 
-                # Show sample predictions
-                for i in range(3):
-                    input_seq = inputs[i].cpu().numpy().squeeze()
-                    target_seq = labels[i].cpu().numpy().squeeze()
-                    output_seq = outputs[i].cpu().numpy().squeeze()
+                if save:
+                    for i in range(3):
+                        input_seq = inputs[i].cpu().numpy().squeeze()
+                        target_seq = labels[i].cpu().numpy().squeeze()
+                        output_seq = outputs[i].cpu().numpy().squeeze()
 
-                    fig, axes = plt.subplots(3, input_seq.shape[0], figsize=(15, 5))
-                    for t in range(input_seq.shape[0]):
-                        axes[0, t].imshow(input_seq[t], cmap='gray')
-                        axes[0, t].axis('off')
-                        axes[0, t].set_title(f'Input {t+1}')
+                        fig, axes = plt.subplots(3, input_seq.shape[0], figsize=(15, 5))
+                        for t in range(input_seq.shape[0]):
+                            axes[0, t].imshow(input_seq[t], cmap='gray')
+                            axes[0, t].axis('off')
+                            axes[0, t].set_title(f'Input {t+1}')
 
-                        axes[1, t].imshow(output_seq[t], cmap='gray')
-                        axes[1, t].axis('off')
-                        axes[1, t].set_title(f'Output {t+1}')
+                            axes[1, t].imshow(output_seq[t], cmap='gray')
+                            axes[1, t].axis('off')
+                            axes[1, t].set_title(f'Output {t+1}')
 
-                        axes[2, t].imshow(target_seq[t], cmap='gray')
-                        axes[2, t].axis('off')
-                        axes[2, t].set_title(f'Target {t+1}')
+                            axes[2, t].imshow(target_seq[t], cmap='gray')
+                            axes[2, t].axis('off')
+                            axes[2, t].set_title(f'Target {t+1}')
 
-                    plt.show()
+                        save_path = os.path.join(save_dir, f'batch_{batch_idx}_sample_{i}.png')
+                        plt.savefig(save_path)
+                        plt.close(fig)
 
                 break  # Only visualize for the first batch
 
         print(f"Test Loss: {total_loss / len(test_loader)}")
+        return torch.cat(all_output_frames, dim=0)
 
     def evaluate_model(model, test_loader, criterion, pred_frames,device='cpu'):
         model.eval()

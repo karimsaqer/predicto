@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
-
+import os
 
 class SimVP(nn.Module):
     def __init__(self, shape_in=(10, 1, 64, 64), hid_S=16, hid_T=256, N_S=4, N_T=8, incep_ker=[3, 5, 7, 11], groups=8):
@@ -94,11 +94,18 @@ class SimVP(nn.Module):
                 train_loader.set_postfix(loss=loss.item())
             print(f'Epoch [{epoch+1}/{epochs}], Loss: {epoch_loss/len(train_loader):.4f}')
 
-    def test_model(self, test_loader, device='cuda'):
+    def test_model(self, test_loader, device='cuda', save=True):
         self.to(device)
         self.eval()
+
+        save_dir = 'output_frames'
+        if save and not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        all_output_frames = []
+
         with torch.no_grad():
-            for data in test_loader:
+            for batch_idx, data in enumerate(test_loader):
                 data = data.to(device).float()
                 input = data[:, :10, :, :, :]
                 target = data[:, 10:, :, :, :]
@@ -106,8 +113,14 @@ class SimVP(nn.Module):
                 input = input.detach().cpu().numpy()
                 target = target.detach().cpu().numpy()
                 output = output.detach().cpu().numpy()
-                self.plot_frames(input[0], target[0], output[0], frame_idx=range(0, 10))
-                break
+                all_output_frames.append(output)
+
+                if save:
+                    self.plot_frames(input[0], target[0], output[0], frame_idx=range(0, 10), save_dir=save_dir, batch_idx=batch_idx)
+
+                break  # Only visualize for the first batch
+
+        return torch.cat([torch.tensor(f) for f in all_output_frames], dim=0)
 
     def plot_frames(self, input_frames, target_frames, output_frames, frame_idx):
         fig, axes = plt.subplots(3, len(frame_idx), figsize=(15, 5))
@@ -136,7 +149,7 @@ class SimVP(nn.Module):
     - mse_loss: Mean Squared Error (MSE) over the dataset.
     """
     def evaluate_model(self, loader, criterion, pred_frames):
-        self.generator.eval()
+        self.eval()
         total_loss = 0
         ssim_scores = []
         psnr_scores = []

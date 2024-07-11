@@ -14,6 +14,8 @@ from ..modules.convlstm.conv import ConvLSTM
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 import numpy as np
+import os
+
 
 class ConvLSTMModule(LightningModule):
     def __init__(self, model = None, configs = None, lr=0.001):
@@ -111,13 +113,19 @@ class ConvLSTMModule(LightningModule):
         trainer = Trainer(max_epochs=epochs, logger=logger , devices=[0], accelerator="gpu")
         trainer.fit(self, train_loader)
 
-    def test_model(self, test_loader, device='cpu'):
-        self.to(device)
+    def test_model(self, test_loader, device='cpu', save=True):
         self.to(device)
         self.eval()
         pre_seq_length = self.configs['in_frames_length']
         aft_seq_length = self.configs['out_frames_length']
-        for batch in test_loader:
+
+        save_dir='pred_images'
+        if save and not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        all_output_frames = []
+
+        for batch_idx, batch in enumerate(test_loader):
             frames, mask_true = batch
             frames = frames.to(device)
             mask_true = mask_true.to(device)
@@ -130,10 +138,18 @@ class ConvLSTMModule(LightningModule):
 
             with torch.no_grad():
                 pred_y = self(frames, mask_true)
+                all_output_frames.append(pred_y.cpu())
 
             print('>' * 35 + ' Predicted Output ' + '<' * 35)
             show_video_line(pred_y[0].cpu().numpy(), ncols=aft_seq_length, vmax=0.6, cbar=False, out_path=None, format='png', use_rgb=False)
-            break
+
+            if save:
+                save_path = os.path.join(save_dir, f'batch_{batch_idx}_output.png')
+                show_video_line(pred_y[0].cpu().numpy(), ncols=aft_seq_length, vmax=0.6, cbar=False, out_path=save_path, format='png', use_rgb=False)
+
+            break  # Only visualize for the first batch
+
+        return torch.cat(all_output_frames, dim=0)
 
     def evaluate_model(model, test_loader, criterion, pred_frames,device='cpu'):
         model.eval()
