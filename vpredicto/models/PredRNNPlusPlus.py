@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import peak_signal_noise_ratio as psnr
 import numpy as np
 import matplotlib.pyplot as plt
 from ..modules.predrnnpp.ghu import GHU
@@ -33,6 +34,10 @@ class PredRNNpp_Model(nn.Module):
 
         # Final convolution to get the output
         self.final_conv = nn.Conv2d(hidden_channels, output_channels, kernel_size=kernel_size, padding=1)
+
+        # In the __init__ method, print the parameters of the model
+        print('The parameters of the model are: \n')
+        print(f'input_channels: {input_channels}, hidden_channels: {hidden_channels}, kernel_size: {kernel_size}, num_layers: {num_layers}, output_channels: {output_channels}')
 
     def forward(self, x, pred_frames=10):
         batch_size, seq_len, _, height, width = x.size()
