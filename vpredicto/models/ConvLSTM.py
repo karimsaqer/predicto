@@ -179,19 +179,20 @@ class ConvLSTMModule(LightningModule):
         avg_psnr = np.mean(psnr_scores)
 
         # print(f'Test Loss: {avg_loss:.4f}, SSIM: {avg_ssim:.4f}, PSNR: {avg_psnr:.4f}')
-        return avg_loss, avg_ssim, avg_psnr
+        # return avg_loss, avg_ssim, avg_psnr
+        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr}
 
     def evaluate_ssim(self, test_loader, device='cpu'):
-        _, ssim, __ = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average SSIM: {ssim:.4f}')
+        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
+        print(f'Average SSIM: {results["ssim"]:.4f}')
 
     def evaluate_MSE(self, test_loader, device='cpu'):
-        mse, _, __ = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average MSE: {mse:.4f}')
+        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
+        print(f'Average MSE: {results["loss"]:.4f}')
 
     def evaluate_PSNR(self, test_loader, device='cpu'):
-        __, __, psnr = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average PSNR: {psnr:.4f}')
+        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
+        print(f'Average PSNR: {results["psnr"]:.4f}')
 
 
 # def main():

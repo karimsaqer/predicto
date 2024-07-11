@@ -107,7 +107,7 @@ class GANModel:
         avg_ssim = np.mean(ssim_scores)
         avg_psnr = np.mean(psnr_scores)
         mse_loss = mse_loss / len(loader)
-        return avg_loss, avg_ssim, avg_psnr, mse_loss
+        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
 
     """
     Trains the model on a given dataset loader.
@@ -240,20 +240,21 @@ class GANModel:
         return all_output_frames
 
 
+    
     """
     Evaluate the model on a given dataset loader.
     """
-    def evaluate_ssim(self, test_loader, device='cpu'):
-        _, ssim, __, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average SSIM: {ssim:.4f}')
+    def evaluate_ssim(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average SSIM: {results["ssim"]:.4f}')
 
-    def evaluate_MSE(self, test_loader, device='cpu'):
-        __, __, __, mse = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average MSE: {mse:.4f}')
+    def evaluate_MSE(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average MSE: {results["mse"]:.4f}')
 
-    def evaluate_PSNR(self, test_loader, device='cpu'):
-        __, __, psnr, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average PSNR: {psnr:.4f}')
+    def evaluate_PSNR(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average PSNR: {results["psnr"]:.4f}')
 
     def to(self, device):
         self.device = device

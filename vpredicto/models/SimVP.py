@@ -12,7 +12,7 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 import os
 
 class SimVP(nn.Module):
-    def __init__(self, shape_in=(10, 1, 64, 64), hid_S=16, hid_T=256, N_S=4, N_T=8, incep_ker=[3, 5, 7, 11], groups=8):
+    def __init__(self, shape_in=(10, 1, 64, 64), hid_S=16, hid_T=256, N_S=4, N_T=8, incep_ker=[3, 5, 7, 11], groups=8,device='cuda'):
         super(SimVP, self).__init__()
         '''
         shape_in == Input shape as a tuple (T, C, H, W)
@@ -33,6 +33,15 @@ class SimVP(nn.Module):
 
         # Initialize decoder
         self.decoder = Decoder(hid_S, C, N_S)
+
+        if device == "cuda":
+            if torch.cuda.is_available():
+                self.device = torch.device("cuda")
+            else:
+                self.device = torch.device("cpu")
+                print("CUDA is not available, CPU will be used")
+        else:
+            self.device = torch.device("cpu")
 
         # In the __init__ method, print the parameters of the model
         print('The parameters of the model are: \n')
@@ -154,37 +163,44 @@ class SimVP(nn.Module):
         ssim_scores = []
         psnr_scores = []
         mse_loss = 0
+
+        self.to(self.device)  # Ensure model is on the correct device
+
         with torch.no_grad():
             for batch in loader:
-                video = batch.to(self.device).float().squeeze(2)
-                inputs = video[:, :10, :, :]  # 10 frames for input
-                targets = video[:, 10:20, :, :]  # 10 frames for target
-                outputs = self.generator(inputs)
+                video = batch.to(self.device).float()  # Ensure data is on the correct device
+                inputs = video[:, :10, :, :, :]  # 10 frames for input
+                targets = video[:, 10:20, :, :, :]  # 10 frames for target
+
+                outputs = self(inputs)
                 loss = criterion(outputs, targets)
                 total_loss += loss.item()
                 mse_loss += nn.functional.mse_loss(outputs, targets).item()
+
                 for i in range(outputs.size(0)):
                     output = outputs[i].cpu().numpy().squeeze()
                     target = targets[i].cpu().numpy().squeeze()
-                    ssim_scores.append(ssim(output, target, data_range=target.max() - target.min()))
+                    ssim_scores.append(ssim(output, target, data_range=target.max() - target.min(), multichannel=True))
                     psnr_scores.append(psnr(output, target, data_range=target.max() - target.min()))
+
         avg_loss = total_loss / len(loader)
         avg_ssim = np.mean(ssim_scores)
         avg_psnr = np.mean(psnr_scores)
         mse_loss = mse_loss / len(loader)
-        return avg_loss, avg_ssim, avg_psnr, mse_loss
+
+        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
     
     """
     Evaluate the model on a given dataset loader.
     """
-    def evaluate_ssim(self, test_loader, device='cpu'):
-        _, ssim, __, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average SSIM: {ssim:.4f}')
+    def evaluate_ssim(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average SSIM: {results["ssim"]:.4f}')
 
-    def evaluate_MSE(self, test_loader, device='cpu'):
-        __, __, __, mse = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average MSE: {mse:.4f}')
+    def evaluate_MSE(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average MSE: {results["mse"]:.4f}')
 
-    def evaluate_PSNR(self, test_loader, device='cpu'):
-        __, __, psnr, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average PSNR: {psnr:.4f}')
+    def evaluate_PSNR(self, test_loader, device='cuda'):
+        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average PSNR: {results["psnr"]:.4f}')
