@@ -2,18 +2,39 @@ import torch
 from ..models.ConvLSTM import ConvLSTMModule
 from ..models.MIM import MIMLightningModel
 from ..models.PredRNNPlusPlus import PredRNNpp_Model
-from ..models.SimVP import SimVP
-from ..models.GAN import GANModel
-from torch.utils.data import DataLoader, random_split
-from torchvision.datasets import MovingMNIST
+
+
+
+# Adding configs 
 
 # Base class for all models
 class Predicto:
     '''
     init method to initialize the model and device: you can pass the model that you chose and device as parameters
     '''
-    def __init__(self, model=None, device='cpu'):
-        if device == "cuda":
+    def __init__(self, configs = None):
+        if configs==None or configs=='':
+            configs={
+                'in_shape': [10, 1, 64, 64],
+                'filter_size': 5,
+                'stride': 1,
+                'patch_size':2,
+                'in_frames_length': 10,
+                'out_frames_length': 10,
+                "total_length":20,
+                "batch_size" : 4,
+                "r_sampling_step_1" : 25000,
+                "r_sampling_step_2" : 50000,
+                "r_exp_alpha" : 5000,
+                "sampling_stop_iter" : 50000,
+                "sampling_start_value" : 1.0,
+                "sampling_changing_rate" : 0.00002,
+                "num_hidden":[128,128,128,128],
+                "lr":0.001,
+                "layer_norm":0,
+                'device':"cuda"
+                }
+        if configs["device"].lower() == "cuda":
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
             else:
@@ -22,8 +43,23 @@ class Predicto:
         else:
             self.device = torch.device("cpu")
 
-
-        self.model = model.to(self.device) if model else ConvLSTMModule().to(self.device)
+        # if 
+        # self.model = model.to(self.device) if model else ConvLSTMModule().to(self.device)
+        self.device = configs["device"] if configs else "cpu"
+        if configs['model_name']==None:
+          self.model=ConvLSTMModule(configs)
+        elif configs['model_name'].lower()=='mim':
+          self.model=MIMLightningModel(configs)
+        elif configs['model_name'].lower()=='convlstm':
+          self.model=ConvLSTMModule(configs)
+        elif configs['model_name'].lower()=='predrnn++':
+          self.model=PredRNNpp_Model(configs)
+        elif configs['model_name'].lower()=='simvp':
+          self.model=ConvLSTMModule(configs)
+        elif configs['model_name'].lower()=='prednet':
+          self.model=ConvLSTMModule(configs)
+        elif configs['model_name'].lower()=='gan':
+          self.model=ConvLSTMModule(configs)
 
     '''
     train method to train the model: you can pass the train_loader, learning rate, and number of epochs as parameters
@@ -81,37 +117,7 @@ class Predicto:
     the input is the path to the .pkl file
     the output is the loaded model
     '''
-    def load_pkl(self, pkl_file_path='model.pkl'):
+    def load_pkl(self, pkl_file_path='model.pth'):
         state_dict = torch.load(pkl_file_path)
         self.model.load_state_dict(state_dict)
         print(f"Model loaded from {pkl_file_path}")
-
-
-    '''
-    get_data_loaders method to get the train and test data loaders: you can pass the batch size and train size as parameters
-    the input is the batch size and train size
-    the output is the train and test
-    '''
-    def get_data_loaders(batch_size=4, train_size=0.9):
-      dataset = MovingMNIST(root='data/', download=True)
-      num_samples = len(dataset)
-      train_size = int(train_size * num_samples)
-      test_size = num_samples - train_size
-      input_frames = 10
-      predicted_frames = 10
-      train_dataset, test_dataset = random_split(dataset[:num_samples], [train_size, test_size])
-      x_train, y_train = split_dataset(train_dataset, input_frames, predicted_frames)
-      x_test, y_test = split_dataset(test_dataset, input_frames, predicted_frames)
-      train_loader = DataLoader(list(zip(x_train, y_train)), batch_size=batch_size, shuffle=True)
-      test_loader = DataLoader(list(zip(x_test, y_test)), batch_size=batch_size, shuffle=False)
-
-      return train_loader, test_loader
-
-# Function to split sequence into X and Y
-def split_dataset(dataset, input_frames, predicted_frames):
-    X, Y = [], []
-    for sequence in dataset:
-        for i in range(len(sequence) - input_frames - predicted_frames + 1):
-            X.append(sequence[i:i+input_frames].float())
-            Y.append(sequence[i+input_frames:i+input_frames+predicted_frames].float())
-    return torch.stack(X), torch.stack(Y)
