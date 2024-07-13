@@ -4,6 +4,7 @@ from ..models.MIM import MIMLightningModel
 from ..models.PredRNNPlusPlus import PredRNNpp_Model
 from ..models.SimVP import SimVP
 from ..models.GAN import GANModel
+from ..models.PredNet import PredNet
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import MovingMNIST
 
@@ -12,7 +13,7 @@ class Predicto:
     '''
     init method to initialize the model and device: you can pass the model that you chose and device as parameters
     '''
-    def __init__(self, model=None, device='cpu'):
+    def __init__(self, model=None, device='cuda'):
         if device == "cuda":
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
@@ -90,32 +91,3 @@ class Predicto:
         self.model.load_state_dict(state_dict)
         print(f"Model loaded from {pkl_file_path}")
 
-
-    '''
-    get_data_loaders method to get the train and test data loaders: you can pass the batch size and train size as parameters
-    the input is the batch size and train size
-    the output is the train and test
-    '''
-    def get_data_loaders(batch_size=4, train_size=0.9):
-      dataset = MovingMNIST(root='data/', download=True)
-      num_samples = len(dataset)
-      train_size = int(train_size * num_samples)
-      test_size = num_samples - train_size
-      input_frames = 10
-      predicted_frames = 10
-      train_dataset, test_dataset = random_split(dataset[:num_samples], [train_size, test_size])
-      x_train, y_train = split_dataset(train_dataset, input_frames, predicted_frames)
-      x_test, y_test = split_dataset(test_dataset, input_frames, predicted_frames)
-      train_loader = DataLoader(list(zip(x_train, y_train)), batch_size=batch_size, shuffle=True)
-      test_loader = DataLoader(list(zip(x_test, y_test)), batch_size=batch_size, shuffle=False)
-
-      return train_loader, test_loader
-
-# Function to split sequence into X and Y
-def split_dataset(dataset, input_frames, predicted_frames):
-    X, Y = [], []
-    for sequence in dataset:
-        for i in range(len(sequence) - input_frames - predicted_frames + 1):
-            X.append(sequence[i:i+input_frames].float())
-            Y.append(sequence[i+input_frames:i+input_frames+predicted_frames].float())
-    return torch.stack(X), torch.stack(Y)

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from ..modules.predrnnpp.ghu import GHU
 from ..modules.predrnnpp.causal_lstm import CausalLSTMCell
 import os
+from tqdm import tqdm
 '''
 PredRNN++ Model
 __init__ method to initialize the PredRNN++ Model: you can pass the input_channels, hidden_channels, kernel_size, num_layers, and output_channels as parameters
@@ -100,6 +101,7 @@ class PredRNNpp_Model(nn.Module):
         # Training loop
         for epoch in range(0, num_epochs):
             self.train()
+            train_loader = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epochs} - Training')
             for batch in train_loader:
                 inputs, targets = batch
                 inputs = inputs.to(device)
@@ -164,8 +166,9 @@ class PredRNNpp_Model(nn.Module):
         print(f"Test Loss: {total_loss / len(test_loader)}")
         return torch.cat(all_output_frames, dim=0)
 
-    def evaluate_model(model, test_loader, criterion, pred_frames,device='cpu'):
-        model.eval()
+    def evaluate_model(self, test_loader, criterion, pred_frames, device='cuda'):
+        self.eval()
+        self.to(device)
         total_loss = 0
         ssim_scores = []
         psnr_scores = []
@@ -175,7 +178,7 @@ class PredRNNpp_Model(nn.Module):
                 inputs = inputs.to(device)
                 targets = targets.to(device)
 
-                outputs = model(inputs, pred_frames=pred_frames)
+                outputs = self(inputs)
                 loss = criterion(outputs[:, -pred_frames:], targets)
                 total_loss += loss.item()
 
@@ -192,17 +195,16 @@ class PredRNNpp_Model(nn.Module):
         avg_psnr = np.mean(psnr_scores)
 
         # print(f'Test Loss: {avg_loss:.4f}, SSIM: {avg_ssim:.4f}, PSNR: {avg_psnr:.4f}')
-        # return avg_loss, avg_ssim, avg_psnr
-        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr}
+        return avg_loss, avg_ssim, avg_psnr
 
-    def evaluate_ssim(self, test_loader, device='cpu'):
-        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average SSIM: {results["ssim"]:.4f}')
+    def evaluate_ssim(self, test_loader, device='cuda'):
+        _, ssim, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10, device)
+        print(f'Average SSIM: {ssim:.4f}')
 
-    def evaluate_MSE(self, test_loader, device='cpu'):
-        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average MSE: {results["loss"]:.4f}')
+    def evaluate_MSE(self, test_loader, device='cuda'):
+        mse, _, __ = self.evaluate_model(test_loader, nn.MSELoss(), 10, device)
+        print(f'Average MSE: {mse:.4f}')
 
-    def evaluate_PSNR(self, test_loader, device='cpu'):
-        results = self.evaluate_model(self, test_loader, nn.MSELoss(), 10, device)
-        print(f'Average PSNR: {results["psnr"]:.4f}')
+    def evaluate_PSNR(self, test_loader, device='cuda'):
+        __, __, psnr = self.evaluate_model(test_loader, nn.MSELoss(), 10, device)
+        print(f'Average PSNR: {psnr:.4f}')

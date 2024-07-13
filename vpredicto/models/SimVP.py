@@ -131,15 +131,25 @@ class SimVP(nn.Module):
 
         return torch.cat([torch.tensor(f) for f in all_output_frames], dim=0)
 
-    def plot_frames(self, input_frames, target_frames, output_frames, frame_idx):
-        fig, axes = plt.subplots(3, len(frame_idx), figsize=(15, 5))
+    def plot_frames(self, input_frames, target_frames, output_frames, frame_idx, save_dir, batch_idx):
+        num_frames = len(frame_idx)
+        fig, axes = plt.subplots(3, num_frames, figsize=(15, 5))
+
         for i, idx in enumerate(frame_idx):
-            axes[0, i].imshow(input_frames[idx].transpose(1, 2, 0))
-            axes[0, i].set_title(f'Input {idx}')
-            axes[1, i].imshow(target_frames[idx].transpose(1, 2, 0))
-            axes[1, i].set_title(f'Target {idx}')
-            axes[2, i].imshow(output_frames[idx].transpose(1, 2, 0))
-            axes[2, i].set_title(f'Output {idx}')
+            axes[0, i].imshow(input_frames[idx].transpose(1, 2, 0), cmap='gray')
+            axes[0, i].axis('off')
+            axes[0, i].set_title(f'Input {idx+1}')
+
+            axes[1, i].imshow(target_frames[idx].transpose(1, 2, 0), cmap='gray')
+            axes[1, i].axis('off')
+            axes[1, i].set_title(f'Target {idx+1}')
+
+            axes[2, i].imshow(output_frames[idx].transpose(1, 2, 0), cmap='gray')
+            axes[2, i].axis('off')
+            axes[2, i].set_title(f'Output {idx+1}')
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(save_dir, f'batch_{batch_idx}.png'))
         plt.show()
     
     """
@@ -188,19 +198,21 @@ class SimVP(nn.Module):
         avg_psnr = np.mean(psnr_scores)
         mse_loss = mse_loss / len(loader)
 
-        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
+        # return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
+        return avg_loss, avg_ssim, avg_psnr, mse_loss
     
     """
     Evaluate the model on a given dataset loader.
     """
     def evaluate_ssim(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average SSIM: {results["ssim"]:.4f}')
+        _, avg_ssim, _, _ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average SSIM: {avg_ssim:.4f}')
+
 
     def evaluate_MSE(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average MSE: {results["mse"]:.4f}')
+        _, _, _, mse_loss = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average MSE: {mse_loss:.4f}')
 
     def evaluate_PSNR(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average PSNR: {results["psnr"]:.4f}')
+        _, _, avg_psnr, _ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average PSNR: {avg_psnr:.4f}')

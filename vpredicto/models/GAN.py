@@ -107,7 +107,8 @@ class GANModel:
         avg_ssim = np.mean(ssim_scores)
         avg_psnr = np.mean(psnr_scores)
         mse_loss = mse_loss / len(loader)
-        return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
+        # return {"loss": avg_loss, "ssim": avg_ssim, "psnr": avg_psnr, "mse": mse_loss}
+        return avg_loss, avg_ssim, avg_psnr, mse_loss
 
     """
     Trains the model on a given dataset loader.
@@ -198,7 +199,7 @@ class GANModel:
         self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
 
         save_dir = 'pred_results'
-        save = True
+        # save = True
         if save and not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -245,16 +246,17 @@ class GANModel:
     Evaluate the model on a given dataset loader.
     """
     def evaluate_ssim(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average SSIM: {results["ssim"]:.4f}')
+        _, avg_ssim, _, _ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average SSIM: {avg_ssim:.4f}')
+
 
     def evaluate_MSE(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average MSE: {results["mse"]:.4f}')
+        _, _, _, mse_loss = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average MSE: {mse_loss:.4f}')
 
     def evaluate_PSNR(self, test_loader, device='cuda'):
-        results = self.evaluate_model(test_loader, nn.MSELoss(), 10)
-        print(f'Average PSNR: {results["psnr"]:.4f}')
+        _, _, avg_psnr, _ = self.evaluate_model(test_loader, nn.MSELoss(), 10)
+        print(f'Average PSNR: {avg_psnr:.4f}')
 
     def to(self, device):
         self.device = device
