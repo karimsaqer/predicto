@@ -21,7 +21,7 @@
 
     <h2>Usage</h2>
     <h3>Quick Start</h3>
-    <pre><code>from predicto import PredRNN, MIM, CausalLSTM, Predicto
+    <pre><code>from predicto import PredRNN, MIM, ConvLSTM, SimVP,PredNet, Novel GAN and Predicto
 
 # Create a model object
 model_object = MIM()
